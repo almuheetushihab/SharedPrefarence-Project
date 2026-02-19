@@ -23,6 +23,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,12 +39,16 @@ import androidx.compose.ui.unit.sp
 fun ExpenseScreen(viewModel: ExpenseViewModel) {
     var amount by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
-    val expenseList by viewModel.expenses
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)
-        .statusBarsPadding()) {
+    val expenseList by viewModel.expenses.observeAsState(initial = emptyList())
+    val totalAmount by viewModel.totalAmount.observeAsState(initial = 0)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .statusBarsPadding()
+    ) {
         Text("Daily Expense Tracker", fontSize = 24.sp, fontWeight = FontWeight.Bold)
 
         Card(
@@ -55,7 +60,7 @@ fun ExpenseScreen(viewModel: ExpenseViewModel) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Total Spending", fontSize = 16.sp)
                 Text(
-                    "৳ ${viewModel.getTotalAmount()}",
+                    "৳ $totalAmount",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold
                 )

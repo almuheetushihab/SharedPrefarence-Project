@@ -26,7 +26,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     val name by viewModel.userName
     val darkMode by viewModel.isDarkMode
 
-    var textFieldValue: String by remember(name) { mutableStateOf(name) }
+    var textFieldValue by remember(name) { mutableStateOf<String>(name) }
 
     Column(
         modifier = Modifier
