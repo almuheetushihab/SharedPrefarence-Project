@@ -1,37 +1,33 @@
-package com.shihab.practicesharedprefarence.ui.screen.settingscreen
-
 import android.app.Application
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.State
 import androidx.lifecycle.AndroidViewModel
 import com.shihab.practicesharedprefarence.data.PreferenceManager
 
-class SettingsViewModel( application: Application) : AndroidViewModel(application) {
-    private val preferenceManager = PreferenceManager(application)
+class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val pref = PreferenceManager(application)
 
-    var userName = mutableSetOf("")
-        private set
+    private val _userName = mutableStateOf("")
+    val userName: State<String> = _userName
 
-    var isDarkMode = mutableStateOf(false)
-        private set
+    private val _isDarkMode = mutableStateOf(false)
+    val isDarkMode: State<Boolean> = _isDarkMode
 
     init {
         loadData()
     }
 
     private fun loadData() {
-        userName.value = pref.getUserName()
-        isDarkMode.value = pref.getDarkMode()
+        _userName.value = pref.getUserName()
     }
 
     fun saveUserName(name: String) {
-        userName.value = name
+        _userName.value = name
         pref.saveUserName(name)
     }
 
     fun toggleDarkMode(isDark: Boolean) {
-        isDarkMode.value = isDark
-        pref.saveDarkMode(isDark)
+        _isDarkMode.value = isDark
     }
 }
