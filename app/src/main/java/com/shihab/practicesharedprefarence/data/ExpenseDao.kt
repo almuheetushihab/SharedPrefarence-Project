@@ -17,8 +17,8 @@ interface ExpenseDao {
     suspend fun deleteExpense(expense: Expense)
 
     @Query("SELECT * FROM expense_table ORDER BY id DESC")
-    fun getAllExpenses(): kotlinx.coroutines.flow.Flow<List<Expense>>
+    fun getAllExpenses(): Flow<List<Expense>>
 
-    @Query("SELECT SUM(CAST(amount AS INTEGER)) FROM expense_table")
-    fun getTotalAmount(): kotlinx.coroutines.flow.Flow<Int?>
+    @Query("SELECT SUM(CAST(amount AS BIGINT)) FROM expense_table")
+    fun getTotalAmount(): Flow<Long?>
 }
