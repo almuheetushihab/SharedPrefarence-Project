@@ -18,8 +18,9 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
 
     val expenses = dao.getAllExpenses().asLiveData()
     val totalAmount = dao.getTotalAmount().asLiveData()
+    val dailyExpenses = dao.getDailyExpenses().asLiveData()
 
-    fun addExpense(amountStr: String, note: String) {
+    fun addExpense(amountStr: String, note: String, category: String) {
         val sdf = SimpleDateFormat("dd MMM, yyyy - hh:mm a", Locale.getDefault())
         val currentDate = sdf.format(Date())
 
@@ -28,6 +29,7 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
         val newExpense = Expense(
             amount = amountLong,
             note = note,
+            category = category,
             date = currentDate
         )
 

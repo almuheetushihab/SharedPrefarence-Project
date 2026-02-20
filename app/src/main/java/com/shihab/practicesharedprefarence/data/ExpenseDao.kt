@@ -21,4 +21,12 @@ interface ExpenseDao {
 
     @Query("SELECT SUM(CAST(amount AS BIGINT)) FROM expense_table")
     fun getTotalAmount(): Flow<Long?>
+
+    @Query("SELECT date, SUM(CAST(amount AS BIGINT)) as totalAmount FROM expense_table GROUP BY date ORDER BY date ASC")
+    fun getDailyExpenses(): Flow<List<DailyExpense>>
 }
+
+data class DailyExpense(
+    val date: String,
+    val totalAmount: Long
+)
