@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.shihab.practicesharedprefarence"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.shihab.practicesharedprefarence"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -68,4 +68,5 @@ dependencies {
     implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)
     implementation(libs.vico.core)
+    implementation("androidx.compose.material:material-icons-extended:1.7.6")
 }

@@ -9,6 +9,6 @@ data class Expense(
     val id: Int = 0,
     val amount: Long,
     val note: String,
-    val category: String = "Other", // নতুন ফিল্ড যোগ করা হলো
+    val category: String = "Other",
     val date: String
 )
