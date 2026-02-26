@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import com.shihab.practicesharedprefarence.model.Expense
 
 
-@Database(entities = [Expense::class], version = 2, exportSchema = false)
+@Database(entities = [Expense::class], version = 3, exportSchema = false)
 abstract class ExpenseDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
 

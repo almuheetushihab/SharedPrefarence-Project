@@ -20,7 +20,8 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     private val preferenceManager = PreferenceManager(application)
 
     val expenses = dao.getAllExpenses().asLiveData()
-    val totalAmount = dao.getTotalAmount().asLiveData()
+    val totalExpense = dao.getTotalExpense().asLiveData()
+    val totalIncome = dao.getTotalIncome().asLiveData()
     val dailyExpenses = dao.getDailyExpenses().asLiveData()
 
     private val _monthlyBudget = MutableLiveData<Float>(preferenceManager.getBudget())
@@ -31,7 +32,7 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
         _monthlyBudget.value = amount
     }
 
-    fun addExpense(amountStr: String, note: String, category: String) {
+    fun addTransaction(amountStr: String, note: String, category: String, type: String) {
         val sdf = SimpleDateFormat("dd MMM, yyyy - hh:mm a", Locale.getDefault())
         val currentDate = sdf.format(Date())
 
@@ -41,7 +42,8 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
             amount = amountLong,
             note = note,
             category = category,
-            date = currentDate
+            date = currentDate,
+            type = type
         )
 
         viewModelScope.launch {

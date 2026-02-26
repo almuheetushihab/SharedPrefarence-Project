@@ -19,10 +19,13 @@ interface ExpenseDao {
     @Query("SELECT * FROM expense_table ORDER BY id DESC")
     fun getAllExpenses(): Flow<List<Expense>>
 
-    @Query("SELECT SUM(CAST(amount AS BIGINT)) FROM expense_table")
-    fun getTotalAmount(): Flow<Long?>
+    @Query("SELECT SUM(CAST(amount AS BIGINT)) FROM expense_table WHERE type = 'Expense'")
+    fun getTotalExpense(): Flow<Long?>
 
-    @Query("SELECT date, SUM(CAST(amount AS BIGINT)) as totalAmount FROM expense_table GROUP BY date ORDER BY date ASC")
+    @Query("SELECT SUM(CAST(amount AS BIGINT)) FROM expense_table WHERE type = 'Income'")
+    fun getTotalIncome(): Flow<Long?>
+
+    @Query("SELECT date, SUM(CAST(amount AS BIGINT)) as totalAmount FROM expense_table WHERE type = 'Expense' GROUP BY date ORDER BY date ASC")
     fun getDailyExpenses(): Flow<List<DailyExpense>>
 }
 

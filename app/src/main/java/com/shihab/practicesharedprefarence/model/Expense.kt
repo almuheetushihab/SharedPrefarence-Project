@@ -10,5 +10,6 @@ data class Expense(
     val amount: Long,
     val note: String,
     val category: String = "Other",
-    val date: String
+    val date: String,
+    val type: String = "Expense" // "Income" or "Expense"
 )
