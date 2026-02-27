@@ -8,6 +8,7 @@ import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.shihab.practicesharedprefarence.data.ExpenseDatabase
 import com.shihab.practicesharedprefarence.data.PreferenceManager
+import com.shihab.practicesharedprefarence.model.Category
 import com.shihab.practicesharedprefarence.model.Expense
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -23,6 +24,8 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     val totalExpense = dao.getTotalExpense().asLiveData()
     val totalIncome = dao.getTotalIncome().asLiveData()
     val dailyExpenses = dao.getDailyExpenses().asLiveData()
+    val dailyIncome = dao.getDailyIncome().asLiveData()
+    val categorySpending = dao.getCategoryWiseSpending().asLiveData()
 
     private val _monthlyBudget = MutableLiveData<Float>(preferenceManager.getBudget())
     val monthlyBudget: LiveData<Float> = _monthlyBudget
@@ -30,6 +33,20 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     fun updateBudget(amount: Float) {
         preferenceManager.saveBudget(amount)
         _monthlyBudget.value = amount
+    }
+
+    fun getCategories(type: String) = dao.getCategoriesByType(type).asLiveData()
+
+    fun addCategory(name: String, type: String) {
+        viewModelScope.launch {
+            dao.insertCategory(Category(name = name, type = type))
+        }
+    }
+
+    fun deleteCategory(category: Category) {
+        viewModelScope.launch {
+            dao.deleteCategory(category)
+        }
     }
 
     fun addTransaction(amountStr: String, note: String, category: String, type: String) {

@@ -10,11 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -24,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -32,22 +29,27 @@ import androidx.compose.ui.unit.sp
 fun ExpenseScreen(viewModel: ExpenseViewModel) {
     var amount by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("Food") }
-    var transactionType by remember { mutableStateOf("Expense") } // "Income" or "Expense"
+    var category by remember { mutableStateOf("") }
+    var transactionType by remember { mutableStateOf("Expense") }
     var expanded by remember { mutableStateOf(false) }
     var showBudgetDialog by remember { mutableStateOf(false) }
+    var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var newCategoryName by remember { mutableStateOf("") }
     var newBudgetInput by remember { mutableStateOf("") }
-
-    val categories = if (transactionType == "Expense") {
-        listOf("Food", "Transport", "Shopping", "Bills", "Health", "Other")
-    } else {
-        listOf("Salary", "Freelance", "Gift", "Investment", "Other")
-    }
 
     val expenseList by viewModel.expenses.observeAsState(initial = emptyList())
     val totalExpense by viewModel.totalExpense.observeAsState(initial = 0L)
     val totalIncome by viewModel.totalIncome.observeAsState(initial = 0L)
     val monthlyBudget by viewModel.monthlyBudget.observeAsState(initial = 0f)
+    
+    val categoryList by viewModel.getCategories(transactionType).observeAsState(initial = emptyList())
+
+    // Set default category when list changes
+    LaunchedEffect(categoryList, transactionType) {
+        if (category.isEmpty() || !categoryList.any { it.name == category }) {
+            category = categoryList.firstOrNull()?.name ?: ""
+        }
+    }
 
     val currentBalance = (totalIncome ?: 0L) - (totalExpense ?: 0L)
     val progress = if (monthlyBudget > 0) (totalExpense ?: 0L).toFloat() / monthlyBudget else 0f
@@ -78,15 +80,34 @@ fun ExpenseScreen(viewModel: ExpenseViewModel) {
                     viewModel.updateBudget(b)
                     showBudgetDialog = false
                     newBudgetInput = ""
-                }) {
-                    Text("Save")
-                }
+                }) { Text("Save") }
             },
-            dismissButton = {
-                TextButton(onClick = { showBudgetDialog = false }) {
-                    Text("Cancel")
-                }
-            }
+            dismissButton = { TextButton(onClick = { showBudgetDialog = false }) { Text("Cancel") } }
+        )
+    }
+
+    if (showAddCategoryDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddCategoryDialog = false },
+            title = { Text("Add New $transactionType Category") },
+            text = {
+                OutlinedTextField(
+                    value = newCategoryName,
+                    onValueChange = { newCategoryName = it },
+                    label = { Text("Category Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    if (newCategoryName.isNotEmpty()) {
+                        viewModel.addCategory(newCategoryName, transactionType)
+                        showAddCategoryDialog = false
+                        newCategoryName = ""
+                    }
+                }) { Text("Add") }
+            },
+            dismissButton = { TextButton(onClick = { showAddCategoryDialog = false }) { Text("Cancel") } }
         )
     }
 
@@ -106,15 +127,13 @@ fun ExpenseScreen(viewModel: ExpenseViewModel) {
                 newBudgetInput = monthlyBudget.toString()
                 showBudgetDialog = true 
             }) {
-                Icon(Icons.Default.Edit, contentDescription = "Set Budget", tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.primary)
             }
         }
 
-        // Main Balance Card
+        // Dashboard Card
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
@@ -131,67 +150,88 @@ fun ExpenseScreen(viewModel: ExpenseViewModel) {
             }
         }
 
-        // Budget Progress
+        // Budget Info
         if (monthlyBudget > 0) {
-            Column(modifier = Modifier.padding(bottom = 16.dp)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Monthly Budget Limit", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                    Text("৳ ${monthlyBudget.toInt()}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-                }
-                Spacer(modifier = Modifier.height(4.dp))
+            Column(modifier = Modifier.padding(bottom = 12.dp)) {
                 LinearProgressIndicator(
                     progress = { progress.coerceIn(0f, 1f) },
                     modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
                     color = progressColor,
                     trackColor = progressColor.copy(alpha = 0.2f)
                 )
+                Text(
+                    text = "${(progress * 100).toInt()}% of budget used",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = progressColor,
+                    modifier = Modifier.align(Alignment.End).padding(top = 4.dp)
+                )
             }
         }
 
-        // Input Section
+        // Input Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(20.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                // Type Switcher
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-                        .padding(4.dp)
-                ) {
-                    TypeToggleButton(text = "Expense", isSelected = transactionType == "Expense", onClick = { transactionType = "Expense"; category = "Food" }, color = Color.Red, modifier = Modifier.weight(1f))
-                    TypeToggleButton(text = "Income", isSelected = transactionType == "Income", onClick = { transactionType = "Income"; category = "Salary" }, color = Color(0xFF4CAF50), modifier = Modifier.weight(1f))
+                Row(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp)).padding(4.dp)) {
+                    TypeToggleButton(text = "Expense", isSelected = transactionType == "Expense", onClick = { transactionType = "Expense" }, color = Color.Red, modifier = Modifier.weight(1f))
+                    TypeToggleButton(text = "Income", isSelected = transactionType == "Income", onClick = { transactionType = "Income" }, color = Color(0xFF4CAF50), modifier = Modifier.weight(1f))
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Row(modifier = Modifier.fillMaxWidth()) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = amount,
                         onValueChange = { amount = it },
-                        label = { Text("Amount") },
+                        label = { Text("Amount", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Box(modifier = Modifier.weight(1f)) {
+                    Box(modifier = Modifier.weight(1.2f)) {
                         OutlinedTextField(
                             value = category,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Category") },
+                            label = { Text("Category", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
-                            trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Dropdown", Modifier.clickable { expanded = true }) }
+                            singleLine = true,
+                            trailingIcon = { 
+                                Icon(
+                                    Icons.Default.Add, 
+                                    "Add Category", 
+                                    Modifier.size(20.dp).clickable { showAddCategoryDialog = true }
+                                ) 
+                            },
+                            leadingIcon = { 
+                                Icon(
+                                    Icons.Default.ArrowDropDown, 
+                                    "Select", 
+                                    Modifier.size(20.dp).clickable { expanded = true }
+                                ) 
+                            }
                         )
                         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                            categories.forEach { cat ->
-                                DropdownMenuItem(text = { Text(cat) }, onClick = { category = cat; expanded = false })
+                            categoryList.forEach { cat ->
+                                DropdownMenuItem(
+                                    text = { Text(cat.name) },
+                                    onClick = { category = cat.name; expanded = false },
+                                    trailingIcon = {
+                                        IconButton(onClick = { viewModel.deleteCategory(cat) }, modifier = Modifier.size(24.dp)) {
+                                            Icon(Icons.Default.Close, contentDescription = "Delete", modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                )
+                            }
+                            if (categoryList.isEmpty()) {
+                                DropdownMenuItem(text = { Text("No categories") }, onClick = { expanded = false })
                             }
                         }
                     }
@@ -202,31 +242,32 @@ fun ExpenseScreen(viewModel: ExpenseViewModel) {
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
-                    label = { Text("Note (Optional)") },
+                    label = { Text("What for? (e.g. Lunch)") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Button(
                     onClick = {
-                        if (amount.isNotEmpty()) {
-                            viewModel.addTransaction(amount, note.ifEmpty { "No note" }, category, transactionType)
+                        if (amount.isNotEmpty() && category.isNotEmpty()) {
+                            viewModel.addTransaction(amount, note.ifEmpty { "Other" }, category, transactionType)
                             amount = ""; note = ""
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = amount.isNotEmpty() && category.isNotEmpty()
                 ) {
-                    Text("Add $transactionType")
+                    Text("Save $transactionType", fontWeight = FontWeight.Bold)
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
-        Text("Recent Transactions", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
+        Text("History", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
 
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(expenseList) { item ->
@@ -239,13 +280,13 @@ fun ExpenseScreen(viewModel: ExpenseViewModel) {
 @Composable
 fun TransactionSummaryItem(label: String, amount: Long, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(modifier = Modifier.size(32.dp).background(Color.White.copy(alpha = 0.2f), CircleShape), contentAlignment = Alignment.Center) {
-            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+        Box(modifier = Modifier.size(36.dp).background(Color.White.copy(alpha = 0.2f), CircleShape), contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
         }
         Spacer(modifier = Modifier.width(8.dp))
         Column {
             Text(label, color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelSmall)
-            Text("৳ $amount", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Text("৳$amount", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
         }
     }
 }
@@ -253,11 +294,10 @@ fun TransactionSummaryItem(label: String, amount: Long, icon: androidx.compose.u
 @Composable
 fun TypeToggleButton(text: String, isSelected: Boolean, onClick: () -> Unit, color: Color, modifier: Modifier) {
     Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (isSelected) color.copy(alpha = 0.1f) else Color.Transparent)
+        modifier = modifier.clip(RoundedCornerShape(8.dp))
+            .background(if (isSelected) color.copy(alpha = 0.15f) else Color.Transparent)
             .clickable { onClick() }
-            .padding(vertical = 8.dp),
+            .padding(vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(text, color = if (isSelected) color else Color.Gray, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
@@ -268,33 +308,33 @@ fun TypeToggleButton(text: String, isSelected: Boolean, onClick: () -> Unit, col
 fun TransactionItem(item: com.shihab.practicesharedprefarence.model.Expense, onDelete: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             val isIncome = item.type == "Income"
             Box(
-                modifier = Modifier.size(40.dp).background(if (isIncome) Color(0xFFE8F5E9) else Color(0xFFFFEBEE), CircleShape),
+                modifier = Modifier.size(44.dp).background(if (isIncome) Color(0xFFE8F5E9) else Color(0xFFFFEBEE), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     if (isIncome) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
                     contentDescription = null,
-                    tint = if (isIncome) Color(0xFF4CAF50) else Color(0xFFF44336),
-                    modifier = Modifier.size(20.dp)
+                    tint = if (isIncome) Color(0xFF4CAF50) else Color(0xFFF44336)
                 )
             }
             Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                Text(item.note, fontWeight = FontWeight.Bold)
-                Text("${item.category} • ${item.date}", fontSize = 11.sp, color = Color.Gray)
+                Text(item.note, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+                Text("${item.category} • ${item.date}", fontSize = 12.sp, color = Color.Gray)
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     "${if (isIncome) "+" else "-"} ৳${item.amount}",
                     fontWeight = FontWeight.ExtraBold,
-                    color = if (isIncome) Color(0xFF4CAF50) else Color(0xFFF44336)
+                    color = if (isIncome) Color(0xFF4CAF50) else Color(0xFFF44336),
+                    style = MaterialTheme.typography.bodyLarge
                 )
-                IconButton(onClick = onDelete, modifier = Modifier.size(20.dp)) {
+                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
                     Icon(Icons.Default.Delete, contentDescription = null, tint = Color.LightGray, modifier = Modifier.size(16.dp))
                 }
             }

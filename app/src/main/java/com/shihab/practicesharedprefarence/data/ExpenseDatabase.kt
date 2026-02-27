@@ -4,10 +4,11 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.shihab.practicesharedprefarence.model.Category
 import com.shihab.practicesharedprefarence.model.Expense
 
 
-@Database(entities = [Expense::class], version = 3, exportSchema = false)
+@Database(entities = [Expense::class, Category::class], version = 4, exportSchema = false)
 abstract class ExpenseDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
 
