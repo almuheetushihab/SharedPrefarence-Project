@@ -6,16 +6,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,6 +25,8 @@ import androidx.compose.ui.Modifier
 import com.shihab.practicesharedprefarence.ui.screen.chartscreen.ChartScreen
 import com.shihab.practicesharedprefarence.ui.screen.expensescreen.ExpenseScreen
 import com.shihab.practicesharedprefarence.ui.screen.expensescreen.ExpenseViewModel
+import com.shihab.practicesharedprefarence.ui.screen.settingscreen.SettingsScreen
+import com.shihab.practicesharedprefarence.ui.screen.settingscreen.SettingsViewModel
 import com.shihab.practicesharedprefarence.ui.theme.PracticeSharedPrefarenceTheme
 
 class MainActivity : ComponentActivity() {
@@ -32,8 +35,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            PracticeSharedPrefarenceTheme {
-                val viewModel = ExpenseViewModel(application)
+            val settingsViewModel = SettingsViewModel(application)
+            val isDarkMode by settingsViewModel.isDarkMode
+
+            PracticeSharedPrefarenceTheme(darkTheme = isDarkMode) {
+                val expenseViewModel = ExpenseViewModel(application)
                 var currentScreen by remember { mutableStateOf("home") }
 
                 Scaffold(
@@ -51,14 +57,20 @@ class MainActivity : ComponentActivity() {
                                 icon = { Icon(Icons.Default.Info, contentDescription = "Chart") },
                                 label = { Text("Analytics") }
                             )
+                            NavigationBarItem(
+                                selected = currentScreen == "settings",
+                                onClick = { currentScreen = "settings" },
+                                icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+                                label = { Text("Settings") }
+                            )
                         }
                     }
                 ) { innerPadding ->
-                    Modifier.padding(innerPadding).let {
-                        if (currentScreen == "home") {
-                            ExpenseScreen(viewModel = viewModel)
-                        } else {
-                            ChartScreen(viewModel = viewModel)
+                    Box(modifier = Modifier.padding(innerPadding)) {
+                        when (currentScreen) {
+                            "home" -> ExpenseScreen(viewModel = expenseViewModel)
+                            "chart" -> ChartScreen(viewModel = expenseViewModel)
+                            "settings" -> SettingsScreen(viewModel = settingsViewModel)
                         }
                     }
                 }

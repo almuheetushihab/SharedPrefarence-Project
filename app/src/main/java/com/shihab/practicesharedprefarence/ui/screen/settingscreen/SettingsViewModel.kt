@@ -1,3 +1,5 @@
+package com.shihab.practicesharedprefarence.ui.screen.settingscreen
+
 import android.app.Application
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.State
@@ -20,6 +22,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private fun loadData() {
         _userName.value = pref.getUserName()
+        _isDarkMode.value = pref.isDarkMode()
     }
 
     fun saveUserName(name: String) {
@@ -29,5 +32,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun toggleDarkMode(isDark: Boolean) {
         _isDarkMode.value = isDark
+        pref.setDarkMode(isDark)
     }
 }
