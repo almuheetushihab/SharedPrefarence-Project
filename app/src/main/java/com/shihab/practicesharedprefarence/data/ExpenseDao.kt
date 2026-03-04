@@ -14,11 +14,17 @@ interface ExpenseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertExpense(expense: Expense)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllExpenses(expenses: List<Expense>)
+
     @Delete
     suspend fun deleteExpense(expense: Expense)
 
     @Query("SELECT * FROM expense_table ORDER BY id DESC")
     fun getAllExpenses(): Flow<List<Expense>>
+
+    @Query("SELECT * FROM expense_table")
+    suspend fun getAllExpensesList(): List<Expense>
 
     @Query("SELECT * FROM expense_table WHERE (note LIKE '%' || :query || '%' OR category LIKE '%' || :query || '%') ORDER BY id DESC")
     fun searchExpenses(query: String): Flow<List<Expense>>
@@ -42,11 +48,17 @@ interface ExpenseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCategory(category: Category)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllCategories(categories: List<Category>)
+
     @Delete
     suspend fun deleteCategory(category: Category)
 
     @Query("SELECT * FROM category_table WHERE type = :type ORDER BY name ASC")
     fun getCategoriesByType(type: String): Flow<List<Category>>
+
+    @Query("SELECT * FROM category_table")
+    suspend fun getAllCategoriesList(): List<Category>
 }
 
 data class DailyExpense(
