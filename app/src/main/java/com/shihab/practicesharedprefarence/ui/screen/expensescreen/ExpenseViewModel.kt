@@ -1,11 +1,13 @@
 package com.shihab.practicesharedprefarence.ui.screen.expensescreen
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
+import com.shihab.practicesharedprefarence.data.BackupManager
 import com.shihab.practicesharedprefarence.data.ExpenseDatabase
 import com.shihab.practicesharedprefarence.data.PreferenceManager
 import com.shihab.practicesharedprefarence.model.Category
@@ -22,6 +24,7 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     private val database = ExpenseDatabase.getDatabase(application)
     private val dao = database.expenseDao()
     private val preferenceManager = PreferenceManager(application)
+    private val backupManager = BackupManager(application, dao)
 
     private val _searchQuery = MutableStateFlow("")
     
@@ -87,6 +90,20 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     fun deleteExpense(expense: Expense) {
         viewModelScope.launch {
             dao.deleteExpense(expense)
+        }
+    }
+
+    fun exportData(uri: Uri, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = backupManager.exportData(uri)
+            onResult(success)
+        }
+    }
+
+    fun importData(uri: Uri, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = backupManager.importData(uri)
+            onResult(success)
         }
     }
 }

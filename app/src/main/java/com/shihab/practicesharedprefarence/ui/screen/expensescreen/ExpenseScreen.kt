@@ -1,5 +1,8 @@
 package com.shihab.practicesharedprefarence.ui.screen.expensescreen
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,15 +21,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpenseScreen(viewModel: ExpenseViewModel) {
+    val context = LocalContext.current
     var amount by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("") }
@@ -34,6 +42,7 @@ fun ExpenseScreen(viewModel: ExpenseViewModel) {
     var expanded by remember { mutableStateOf(false) }
     var showBudgetDialog by remember { mutableStateOf(false) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var showBackupMenu by remember { mutableStateOf(false) }
     var newCategoryName by remember { mutableStateOf("") }
     var newBudgetInput by remember { mutableStateOf("") }
     var searchQuery by remember { mutableStateOf("") }
@@ -45,6 +54,28 @@ fun ExpenseScreen(viewModel: ExpenseViewModel) {
     val currencySymbol by viewModel.currencySymbol.observeAsState(initial = "৳")
     
     val categoryList by viewModel.getCategories(transactionType).observeAsState(initial = emptyList())
+
+    // Create Backup File Launcher
+    val createBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let {
+            viewModel.exportData(it) { success ->
+                Toast.makeText(context, if (success) "Backup saved successfully!" else "Failed to save backup", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // Restore Backup File Launcher
+    val restoreBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            viewModel.importData(it) { success ->
+                Toast.makeText(context, if (success) "Data restored successfully!" else "Failed to restore data", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     LaunchedEffect(categoryList, transactionType) {
         if (category.isEmpty() || !categoryList.any { it.name == category }) {
@@ -124,11 +155,42 @@ fun ExpenseScreen(viewModel: ExpenseViewModel) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Finance Tracker", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            IconButton(onClick = { 
-                newBudgetInput = monthlyBudget.toString()
-                showBudgetDialog = true 
-            }) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.primary)
+            
+            Box {
+                IconButton(onClick = { showBackupMenu = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "Menu", tint = MaterialTheme.colorScheme.primary)
+                }
+                DropdownMenu(
+                    expanded = showBackupMenu,
+                    onDismissRequest = { showBackupMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Set Budget") },
+                        onClick = { 
+                            showBackupMenu = false
+                            newBudgetInput = monthlyBudget.toString()
+                            showBudgetDialog = true 
+                        },
+                        leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Backup Data") },
+                        onClick = { 
+                            showBackupMenu = false
+                            val fileName = "finance_backup_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())}.json"
+                            createBackupLauncher.launch(fileName)
+                        },
+                        leadingIcon = { Icon(Icons.Default.Backup, contentDescription = null) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Restore Data") },
+                        onClick = { 
+                            showBackupMenu = false
+                            restoreBackupLauncher.launch(arrayOf("application/json"))
+                        },
+                        leadingIcon = { Icon(Icons.Default.Restore, contentDescription = null) }
+                    )
+                }
             }
         }
 
