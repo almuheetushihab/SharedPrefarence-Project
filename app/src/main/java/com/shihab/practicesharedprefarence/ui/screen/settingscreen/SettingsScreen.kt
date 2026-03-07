@@ -16,6 +16,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     val darkMode by viewModel.isDarkMode
     val selectedCurrency by viewModel.currency
     val backupStatus by viewModel.backupStatus
+    val isBiometricEnabled by viewModel.isBiometricEnabled
 
     var textFieldValue by remember(name) { mutableStateOf(name) }
     val currencies = listOf("৳", "$", "€", "£")
@@ -55,6 +56,27 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             Switch(
                 checked = darkMode,
                 onCheckedChange = { viewModel.toggleDarkMode(it) }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text("Biometric Lock")
+                Text(
+                    "Require fingerprint to open app",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(
+                checked = isBiometricEnabled,
+                onCheckedChange = { viewModel.toggleBiometric(it) }
             )
         }
 

@@ -6,21 +6,22 @@ import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
+import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.shihab.practicesharedprefarence.data.PreferenceManager
@@ -45,22 +46,62 @@ class MainActivity : FragmentActivity() {
             var isUnlocked by remember { mutableStateOf(!preferenceManager.isBiometricEnabled()) }
 
             PracticeSharedPrefarenceTheme(darkTheme = isDarkMode) {
-                if (isUnlocked) {
-                    MainContent(settingsViewModel)
-                } else {
-                    LaunchedEffect(Unit) {
-                        showBiometricPrompt { success ->
-                            isUnlocked = success
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    if (isUnlocked) {
+                        MainContent(settingsViewModel)
+                    } else {
+                        LockedScreen(onUnlockRequest = {
+                            showBiometricPrompt { success ->
+                                isUnlocked = success
+                            }
+                        })
+                        
+                        LaunchedEffect(Unit) {
+                            showBiometricPrompt { success ->
+                                isUnlocked = success
+                            }
                         }
-                    }
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        // Optional: Add a "Unlock" button here if prompt is dismissed
                     }
                 }
             }
         }
     }
 
+    @Composable
+    private fun LockedScreen(onUnlockRequest: () -> Unit) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Lock,
+                contentDescription = "Locked",
+                modifier = Modifier.size(80.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                "App Locked",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Please unlock to continue",
+                color = Color.Gray,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+            Button(onClick = onUnlockRequest) {
+                Text("Unlock Now")
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     private fun MainContent(settingsViewModel: SettingsViewModel) {
         val expenseViewModel = ExpenseViewModel(application)
@@ -101,33 +142,43 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun showBiometricPrompt(onResult: (Boolean) -> Unit) {
-        val executor = ContextCompat.getMainExecutor(this)
-        val biometricPrompt = BiometricPrompt(this, executor,
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    super.onAuthenticationError(errorCode, errString)
-                    Toast.makeText(applicationContext, "Auth error: $errString", Toast.LENGTH_SHORT).show()
-                    onResult(false)
-                }
+        val biometricManager = BiometricManager.from(this)
+        when (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)) {
+            BiometricManager.BIOMETRIC_SUCCESS -> {
+                val executor = ContextCompat.getMainExecutor(this)
+                val biometricPrompt = BiometricPrompt(this, executor,
+                    object : BiometricPrompt.AuthenticationCallback() {
+                        override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                            super.onAuthenticationError(errorCode, errString)
+                            if (errorCode != BiometricPrompt.ERROR_USER_CANCELED) {
+                                Toast.makeText(applicationContext, "Error: $errString", Toast.LENGTH_SHORT).show()
+                            }
+                            onResult(false)
+                        }
 
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    super.onAuthenticationSucceeded(result)
-                    onResult(true)
-                }
+                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                            super.onAuthenticationSucceeded(result)
+                            onResult(true)
+                        }
 
-                override fun onAuthenticationFailed() {
-                    super.onAuthenticationFailed()
-                    Toast.makeText(applicationContext, "Auth failed", Toast.LENGTH_SHORT).show()
-                    onResult(false)
-                }
-            })
+                        override fun onAuthenticationFailed() {
+                            super.onAuthenticationFailed()
+                            onResult(false)
+                        }
+                    })
 
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Biometric login")
-            .setSubtitle("Log in using your biometric credential")
-            .setNegativeButtonText("Use account password")
-            .build()
+                val promptInfo = BiometricPrompt.PromptInfo.Builder()
+                    .setTitle("App Lock")
+                    .setSubtitle("Authenticate to use the app")
+                    .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+                    .build()
 
-        biometricPrompt.authenticate(promptInfo)
+                biometricPrompt.authenticate(promptInfo)
+            }
+            else -> {
+                // If biometric is not available, just unlock
+                onResult(true)
+            }
+        }
     }
 }
