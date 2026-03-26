@@ -150,76 +150,76 @@
 //                    }
 //                }
 //
-//                CustomIconButton(
-//                    size = 42.dp,
-//                    iconRes = R.drawable.printer,
-//                    onClick = {
-//                        Toast.makeText(context, "Printer Clicked", Toast.LENGTH_SHORT).show()
-//                    },
-//                    modifier = Modifier
-//                        .padding(end = 8.dp)
-//                )
-//
-//                if (!exchangedFromOrder.isNullOrEmpty()) {
-//                    Surface(
-//                        shape = RoundedCornerShape(4.dp),
-//                        color = Color.Transparent,
-//                        modifier = Modifier.padding(end = 10.dp)
-//                    ) {
-//                        Row(
-//                            verticalAlignment = Alignment.CenterVertically,
-//                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
-//                        ) {
-//                            Text(
-//                                text = "Order Exchanged From : $exchangedFromOrder",
-//                                color = LocalAppColor.current.blue,
-//                                fontWeight = FontWeight.SemiBold,
-//                                fontSize = 14.sp
-//                            )
-//                        }
-//                    }
-//                }
-//
-//                if (!saleHistoryDetails.isRefunded && exchangedFromOrder.isNullOrEmpty()) {
-//                    ButtonWithIcon(
-//                        onButtonClick = onReturnProduct,
-//                        contentPadding = PaddingValues(horizontal = 8.dp),
-//                        enabled = saleHistoryDetails.isEnableToExchanged
-//                    ) {
-//                        Icon(
-//                            painter = painterResource(id = R.drawable.redo),
-//                            contentDescription = "",
-//                            modifier = Modifier.size(18.dp)
-//                        )
-//                        Spacer(modifier = Modifier.width(4.dp))
-//                        Text(text = stringResource(R.string.return_products))
-//                    }
-//                }
-//
-//                if (saleHistoryDetails.isRefunded) {
-//                    Button(
-//                        onClick = { showRefundDialog = true },
-//                        modifier = Modifier,
-//                        colors = ButtonDefaults.buttonColors(
-//                            containerColor = LocalAppColor.current.blue,
-//                            contentColor = MaterialTheme.colorScheme.surface
-//                        ),
-//                        shape = RoundedCornerShape(8.dp),
-//                        contentPadding = PaddingValues(horizontal = 16.dp),
-//                        enabled = true
-//                    ) {
-//                        Text(text = stringResource(R.string.view_refunded_product))
-//                    }
-//                }
-//            }
-//            if (showRefundDialog) {
-//                RefundProductDialog(
-//                    onClose = { showRefundDialog = false },
-//                    refundedProducts = saleHistoryDetails.refundItemsList
-//                    // refundedProducts = com.softzino.barnoipos.models.salehistory.dummyItems
-//                )
-//            }
-//        }
+                CustomIconButton(
+                    size = 42.dp,
+                    iconRes = R.drawable.printer,
+                    onClick = {
+                        Toast.makeText(context, "Printer Clicked", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                )
+
+                if (!exchangedFromOrder.isNullOrEmpty()) {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = Color.Transparent,
+                        modifier = Modifier.padding(end = 10.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = "Order Exchanged From : $exchangedFromOrder",
+                                color = LocalAppColor.current.blue,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+
+                if (!saleHistoryDetails.isRefunded && exchangedFromOrder.isNullOrEmpty()) {
+                    ButtonWithIcon(
+                        onButtonClick = onReturnProduct,
+                        contentPadding = PaddingValues(horizontal = 8.dp),
+                        enabled = saleHistoryDetails.isEnableToExchanged
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.redo),
+                            contentDescription = "",
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(text = stringResource(R.string.return_products))
+                    }
+                }
+
+                if (saleHistoryDetails.isRefunded) {
+                    Button(
+                        onClick = { showRefundDialog = true },
+                        modifier = Modifier,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = LocalAppColor.current.blue,
+                            contentColor = MaterialTheme.colorScheme.surface
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        enabled = true
+                    ) {
+                        Text(text = stringResource(R.string.view_refunded_product))
+                    }
+                }
+            }
+            if (showRefundDialog) {
+                RefundProductDialog(
+                    onClose = { showRefundDialog = false },
+                    refundedProducts = saleHistoryDetails.refundItemsList
+                    // refundedProducts = com.softzino.barnoipos.models.salehistory.dummyItems
+                )
+            }
+        }
 //
 //        val textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W500)
 //
