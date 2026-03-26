@@ -1,26 +1,74 @@
 package com.shihab.practicesharedprefarence.ui.screen.expensescreen
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
+import com.shihab.practicesharedprefarence.data.BackupManager
 import com.shihab.practicesharedprefarence.data.ExpenseDatabase
+import com.shihab.practicesharedprefarence.data.PreferenceManager
+import com.shihab.practicesharedprefarence.model.Category
 import com.shihab.practicesharedprefarence.model.Expense
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-
 class ExpenseViewModel(application: Application) : AndroidViewModel(application) {
     private val database = ExpenseDatabase.getDatabase(application)
     private val dao = database.expenseDao()
+    private val preferenceManager = PreferenceManager(application)
+    private val backupManager = BackupManager(application, dao)
 
-    val expenses = dao.getAllExpenses().asLiveData()
-    val totalAmount = dao.getTotalAmount().asLiveData()
+    private val _searchQuery = MutableStateFlow("")
+    
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val expenses = _searchQuery.flatMapLatest { query ->
+        if (query.isEmpty()) dao.getAllExpenses()
+        else dao.searchExpenses(query)
+    }.asLiveData()
+
+    val totalExpense = dao.getTotalExpense().asLiveData()
+    val totalIncome = dao.getTotalIncome().asLiveData()
     val dailyExpenses = dao.getDailyExpenses().asLiveData()
+    val dailyIncome = dao.getDailyIncome().asLiveData()
+    val categorySpending = dao.getCategoryWiseSpending().asLiveData()
 
-    fun addExpense(amountStr: String, note: String, category: String) {
+    private val _monthlyBudget = MutableLiveData<Float>(preferenceManager.getBudget())
+    val monthlyBudget: LiveData<Float> = _monthlyBudget
+
+    val currencySymbol: LiveData<String> = MutableLiveData(preferenceManager.getCurrency())
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun updateBudget(amount: Float) {
+        preferenceManager.saveBudget(amount)
+        _monthlyBudget.value = amount
+    }
+
+    fun getCategories(type: String) = dao.getCategoriesByType(type).asLiveData()
+
+    fun addCategory(name: String, type: String) {
+        viewModelScope.launch {
+            dao.insertCategory(Category(name = name, type = type))
+        }
+    }
+
+    fun deleteCategory(category: Category) {
+        viewModelScope.launch {
+            dao.deleteCategory(category)
+        }
+    }
+
+    fun addTransaction(amountStr: String, note: String, category: String, type: String) {
         val sdf = SimpleDateFormat("dd MMM, yyyy - hh:mm a", Locale.getDefault())
         val currentDate = sdf.format(Date())
 
@@ -30,7 +78,8 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
             amount = amountLong,
             note = note,
             category = category,
-            date = currentDate
+            date = currentDate,
+            type = type
         )
 
         viewModelScope.launch {
@@ -41,6 +90,27 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     fun deleteExpense(expense: Expense) {
         viewModelScope.launch {
             dao.deleteExpense(expense)
+        }
+    }
+
+    fun exportData(uri: Uri, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = backupManager.exportData(uri)
+            onResult(success)
+        }
+    }
+
+    fun exportToCSV(uri: Uri, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = backupManager.exportToCSV(uri)
+            onResult(success)
+        }
+    }
+
+    fun importData(uri: Uri, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = backupManager.importData(uri)
+            onResult(success)
         }
     }
 }

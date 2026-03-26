@@ -69,4 +69,6 @@ dependencies {
     implementation(libs.vico.compose.m3)
     implementation(libs.vico.core)
     implementation("androidx.compose.material:material-icons-extended:1.7.6")
+    
+    implementation(libs.androidx.biometric)
 }
